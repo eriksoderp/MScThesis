@@ -14,9 +14,10 @@ def main(argv):
     output_file = ''
     number_of_sequences = 1
     number_of_letters = 0.1
-    arg_help = 'modify.py -i <inputfile> -s <number_of_sequences> -l <number_of_letters> -o <outputfile>'
+    number_of_cores = 1
+    arg_help = 'modify.py -i <inputfile> -s <number_of_sequences> -l <number_of_letters> -p <number_of_cores> -o <outputfile>'
     try:
-        opts, args = getopt.getopt(argv, "hi:s:l:o:", ["ifile=","number_of_letters=","ofile="])
+        opts, args = getopt.getopt(argv, "hi:s:l:p:o:", ["ifile=","number_of_letters=","ofile="])
     except:
         print(arg_help)
         sys.exit()
@@ -31,6 +32,8 @@ def main(argv):
             number_of_sequences = int(arg)
         elif opt in("-l", "--number_of_letters"):
             number_of_letters = float(arg)
+        elif opt in("-p"):
+            number_of_cores = int(arg)
         elif opt in ("-o", "--ofile"):
             output_file = arg
         
@@ -38,10 +41,11 @@ def main(argv):
     print ('Input file is', input_file)
     print ('Number of sequences is', number_of_sequences)
     print ('Percent of letters to convert is', number_of_letters)
+    print ('Number of cores used', number_of_cores)
     print ('Output file is', output_file)
 
     first_part = output_file.split('.')[0]
-    sequences, e_distances = modify(input_file, number_of_letters, number_of_sequences)
+    sequences, e_distances = modify(input_file, number_of_letters, number_of_sequences, number_of_cores)
     e_distances = np.asarray(e_distances)
 
     distances_file_name = "modified_sequences/" + "distances_" + first_part + ".csv"
@@ -59,7 +63,7 @@ def main(argv):
 
 
 # number_of_letters specify how many letters to replace
-def modify(input_file, number_of_letters, number_of_sequences): 
+def modify(input_file, number_of_letters, number_of_sequences, number_of_cores): 
     with open(input_file, 'r') as f:
         description = next(f) # skips the description of the genome
         sequence = f.read() # parses sequence
@@ -75,9 +79,9 @@ def modify(input_file, number_of_letters, number_of_sequences):
 
     ss = [s for s in range(number_of_sequences)]
     
-    pool_obj = multiprocessing.Pool()
+    pool_obj = multiprocessing.Pool(number_of_cores)
     ans = pool_obj.starmap(mod_par, zip(itertools.repeat(sequence), itertools.repeat(len_seq), itertools.repeat(letters), itertools.repeat(indices), ss))
-    
+
     for seq, ratio, s in ans:
         sequences += seq
         result[s+1] = ratio
