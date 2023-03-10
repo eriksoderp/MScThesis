@@ -18,7 +18,7 @@ evo_series = df_evo['0']
 df['Evolutionary distance'] = evo_series
 
 vlmc_series = pd.Series(dtype='float64')
-vlmc_series = df_vlmc['0']
+vlmc_series = df_vlmc.iloc[0].reset_index(drop=True).squeeze()
 
 df['VLMC distance'] = vlmc_series
 
