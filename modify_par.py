@@ -44,18 +44,22 @@ def main(argv):
     print ('Number of cores used', number_of_cores)
     print ('Output file is', output_file)
 
-    first_part = output_file.split('.')[0]
-    sequences, e_distances = modify(input_file, number_of_letters, number_of_sequences, number_of_cores)
+    original, sequences, e_distances = modify(input_file, number_of_letters, number_of_sequences, number_of_cores)
     e_distances = np.asarray(e_distances)
 
-    distances_file_name = "modified_sequences/" + "distances_" + first_part + ".csv"
+    distances_file_name = "modified_sequences/" + "distances_" + output_file.split('.')[0] + ".csv"
     os.makedirs(os.path.dirname(distances_file_name), exist_ok=True)
     pd.DataFrame(e_distances).to_csv(distances_file_name)
     
     file_name = "modified_sequences/" + output_file
+    file_name_original = "modified_sequences/" + "original_" + output_file
     os.makedirs(os.path.dirname(file_name), exist_ok=True)
+    os.makedirs(os.path.dirname(file_name_original), exist_ok=True)
     with open(file_name, "w") as f:
         f.write(sequences)
+    f.close()
+    with open(file_name_original, "w") as f:
+        f.write(original)
     f.close()
     end = time.time()
 
@@ -71,16 +75,18 @@ def modify(input_file, number_of_letters, number_of_sequences, number_of_cores):
     f.close()
 
     sequence = sequence.strip()
+    original = ">Original \n" + sequence + "\n"
     len_seq = int(number_of_letters*len(sequence))
     letters = ['A', 'C', 'G', 'T']*len_seq
     indices = [i for i, _ in enumerate(sequence)]
-    sequences = ">Original \n" + sequence + "\n"
+    #sequences = ">Original \n" + sequence + "\n"
+    sequences = ""
     result = [0]*(number_of_sequences+1)
 
-    ss = [s for s in range(number_of_sequences)]
+    zipped = [(sequence, len_seq, letters, indices) + (s,) for s in range(number_of_sequences)]
     
     pool_obj = multiprocessing.Pool(number_of_cores)
-    ans = pool_obj.starmap(mod_par, zip(itertools.repeat(sequence), itertools.repeat(len_seq), itertools.repeat(letters), itertools.repeat(indices), ss))
+    ans = pool_obj.starmap(mod_par, zipped)
 
     for seq, ratio, s in ans:
         sequences += seq
@@ -88,7 +94,7 @@ def modify(input_file, number_of_letters, number_of_sequences, number_of_cores):
 
     pool_obj.close()
 
-    return sequences, result
+    return original, sequences, result
 
 def mod_par(sequence, len_seq, letters, indices, s):
     count = 0
